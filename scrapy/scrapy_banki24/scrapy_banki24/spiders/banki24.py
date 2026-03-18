@@ -1,0 +1,209 @@
+import scrapy
+from urllib.parse import urljoin
+from datetime import datetime, timedelta
+import re
+
+
+class Banki24Spider(scrapy.Spider):
+    name = 'banki24'
+    allowed_domains = ['banki24.by']
+
+    custom_settings = {
+        'ROBOTSTXT_OBEY': False,
+        'DOWNLOAD_TIMEOUT': 30,
+        'DOWNLOAD_DELAY': 1,
+        'CONCURRENT_REQUESTS': 1,
+        'USER_AGENT': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'FEED_EXPORT_ENCODING': 'utf-8',
+    }
+
+    def __init__(self, *args, **kwargs):
+        super(Banki24Spider, self).__init__(*args, **kwargs)
+
+        # Configuration
+        self.lookback_days = 7  # Stop when articles are older than this
+        self.articles_saved = 0
+        self.today = datetime.now()
+
+        self.logger.info(f"Lookback period: {self.lookback_days} days")
+        self.logger.info(f"Processing main page only")
+
+    def start_requests(self):
+        """Start crawling from the main page only"""
+        start_url = "https://banki24.by/news"
+        self.logger.info(f"Starting URL: {start_url}")
+        yield scrapy.Request(
+            url=start_url,
+            callback=self.parse_homepage
+        )
+
+    def parse_homepage(self, response):
+        """Parse main page and extract article links"""
+        self.logger.info("Parsing main page")
+
+        # Extract all article links from the page
+        article_links = set()
+
+        # Get links from media containers
+        for container in response.css('div.media'):
+            href = container.css('h4.media-heading a::attr(href)').get()
+            if href and '/news/' in href:
+                article_links.add(href)
+
+        # Also get links from the "Последние новости" sidebar
+        for link in response.css('div.panel.panel-default.poslednie-novosti a::attr(href)').getall():
+            if link and '/news/' in link:
+                article_links.add(link)
+
+        # Get links from the top featured article
+        top_article_link = response.css('p.lead.mb-10px a::attr(href)').get()
+        if top_article_link and '/news/' in top_article_link:
+            article_links.add(top_article_link)
+
+        self.logger.info(f"Found {len(article_links)} unique article links")
+
+        # Process each article link
+        for idx, href in enumerate(list(article_links)[:50], start=1):  # Limit to 50 articles
+            article_url = urljoin('https://banki24.by/', href)
+
+            yield scrapy.Request(
+                url=article_url,
+                callback=self.parse_article,
+                meta={
+                    'article_idx': idx
+                }
+            )
+
+    def parse_article(self, response):
+        """Parse individual article and extract details"""
+        article_idx = response.meta.get('article_idx', 0)
+
+        # Extract title
+        title = response.css('h1::text').get()
+        if title:
+            title = title.strip()
+        else:
+            self.logger.warning(f"No title found for {response.url}, skipping")
+            return
+
+        # Extract date from meta tag (most reliable)
+        post_date = None
+        date_meta = response.css('meta[property="article:published_time"]::attr(content)').get()
+
+        if date_meta:
+            try:
+                # Parse ISO format date: 2026-03-18T07:00:58+0300
+                # Extract just the date part (YYYY-MM-DD)
+                date_match = re.search(r'(\d{4}-\d{2}-\d{2})', date_meta)
+                if date_match:
+                    date_str = date_match.group(1)
+                    post_date = datetime.strptime(date_str, '%Y-%m-%d')
+                    self.logger.info(f"Found date from meta tag: {post_date.strftime('%Y-%m-%d')}")
+            except Exception as e:
+                self.logger.warning(f"Failed to parse meta date '{date_meta}': {e}")
+
+        # Fallback: try to find date in the page content
+        if not post_date:
+            # Look for date in div.pull-left elements
+            date_selectors = [
+                'div.pull-left ::text',
+                'div.media-body div.pull-left ::text',
+                'div.content_right div.pull-left ::text',
+            ]
+
+            for selector in date_selectors:
+                date_text = response.css(selector).get()
+                if date_text and date_text.strip():
+                    date_match = re.search(r'(\d{4}-\d{2}-\d{2})', date_text)
+                    if date_match:
+                        date_str = date_match.group(1)
+                        try:
+                            post_date = datetime.strptime(date_str, '%Y-%m-%d')
+                            self.logger.info(f"Found date from page content: {date_str}")
+                            break
+                        except:
+                            continue
+
+        # Check if article is too old (only if we have a date)
+        if post_date:
+            days_old = (self.today - post_date).days
+            if days_old >= self.lookback_days:
+                self.logger.info(f"Article is {days_old} days old (>= {self.lookback_days} days lookback), skipping")
+                return
+        else:
+            self.logger.warning(f"No date found for {response.url}")
+            # If we don't have a date, we'll still process it but with a warning
+
+        # Extract article content
+        content = None
+
+        # Try different content selectors
+        content_selectors = [
+            'div.content_right p ::text',  # Main content area with paragraphs
+            'div.content_right ::text',  # Whole content area
+            'div[itemprop="articleBody"] ::text',
+            'div.content ::text',
+            'article ::text',
+        ]
+
+        for selector in content_selectors:
+            content_parts = response.css(selector).getall()
+            if content_parts:
+                # Clean and join the content
+                cleaned_parts = []
+                for part in content_parts:
+                    part = part.strip()
+                    if part and len(part) > 1:  # Skip empty or single char parts
+                        # Skip navigation/text that appears to be UI elements
+                        skip_phrases = [
+                            'главная', 'курсы валют', 'конвертер', 'кредиты',
+                            'вклады', 'бизнесу', 'новости', 'инвестиции', 'токены',
+                            'telegram', 'instagram', 'viber', 'поделиться',
+                            'комментировать', 'реклама', 'подпишитесь',
+                            'все курсы валют', 'навигация', 'меню', 'Подписывайтесь на banki24',
+                            '.social-container', '.social-block', '.social-item',
+                            'background:', 'border-radius:', 'color:', 'font-size:'
+                        ]
+
+                        # Check if this part is likely content
+                        if part[0].isupper() or part[0].isdigit() or part[0] in '●•-':
+                            if not any(phrase.lower() in part.lower() for phrase in skip_phrases):
+                                # Also skip lines that look like CSS
+                                if not any(css in part for css in ['{', '}', ':', ';', '.']):
+                                    cleaned_parts.append(part)
+
+                if cleaned_parts:
+                    content = ' '.join(cleaned_parts)
+                    if len(content) > 100:  # Only if we have substantial content
+                        break
+
+        if not content or len(content) < 100:
+            self.logger.warning(f"No substantial content found for {response.url}, skipping")
+            return
+
+        # Clean up the content
+        content = re.sub(r'\s+', ' ', content)  # Replace multiple spaces with single space
+        content = content.strip()
+
+        # Get current timestamp
+        scraped_at = datetime.now().isoformat()
+
+        self.articles_saved += 1
+        date_str = post_date.strftime('%d.%m.%Y') if post_date else 'Unknown'
+        self.logger.info(f"✓ Article [{article_idx}]: {title[:60]}... ({date_str})")
+
+        yield {
+            'title': title,
+            'url': response.url.rstrip('/'),
+            'content': content,
+            'post_date': post_date.isoformat() if post_date else None,
+            'scraped_at': scraped_at,
+            'source': "banki24",
+        }
+
+    def closed(self, reason):
+        """Called when spider is closed"""
+        self.logger.info("=" * 60)
+        self.logger.info(f"Spider closed. Total articles saved: {self.articles_saved}")
+        self.logger.info(f"Reason: {reason}")
+        self.logger.info("=" * 60)
