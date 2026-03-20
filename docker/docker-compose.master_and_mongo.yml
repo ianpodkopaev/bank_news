@@ -1,0 +1,81 @@
+networks:
+  crawlab-network:
+    external: true
+
+services:
+  master:
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    image: crawlabteam/crawlab:0.6.3
+    container_name: crawlab_master
+    restart: always
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+      - 1.1.1.1
+    environment:
+      TZ: "Europe/Moscow"
+      CRAWLAB_NODE_MASTER: "Y"  # Y: master node
+      CRAWLAB_MONGO_HOST: "mongo"  # mongo host address. In the docker compose network, directly refer to the service name
+      CRAWLAB_MONGO_PORT: "27017"  # mongo port
+      CRAWLAB_MONGO_DB: "crawlab"  # mongo database
+      CRAWLAB_MONGO_USERNAME: ${MONGO_USERNAME}  # mongo username
+      CRAWLAB_MONGO_PASSWORD: ${MONGO_PASSWORD}  # mongo password
+      CRAWLAB_MONGO_AUTHSOURCE: "admin"  # mongo auth source
+    volumes:
+      - "/opt/.crawlab/master:/root/.crawlab"  # persistent crawlab metadata
+      - "/opt/crawlab/master:/data"  # persistent crawlab data
+      #- "/var/crawlab/log:/var/log/crawlab" # log persistent
+      #- "./spiders/scrapy_bankinform:/app/scrapy_bankinform"  # pre-mounted scrappy_bankinform directory
+      #- "./spiders/scrapy_myfin:/app/scrapy_myfin"  # pre-mounted scrappy_myfin directory
+      #- "./spiders/scrapy_plusworld:/app/scrapy_plusworld"  # pre-mounted scrappy_plusworld directory
+      #- "./spiders/scrapy_rb:/app/scrapy_rb"  # pre-mounted scrappy_rb directory
+      #- "./spiders/scrapy_bankcnews:/app/scrapy_bankcnews"  # pre-mounted scrapy_bankcnews directory
+    ports:
+      - "8080:8080"  # exposed api port
+      - "9666:9666"  # exposed grpc port for worker communication
+    depends_on:
+      - mongo
+    networks:
+      - crawlab-network
+
+  mongo:
+    image: mongo:8.2.2
+    restart: always
+    container_name: mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}  # mongo username
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}  # mongo password
+    volumes:
+      - "/opt/.crawlab/master:/root/.crawlab"  # persistent crawlab metadata
+      - "/opt/crawlab/mongo/data/db:/data/db"  # persistent mongo data
+    ports:
+      - "27017:27017"  # expose mongo port to host machine
+    networks:
+      - crawlab-network
+
+  mongo-yandex-confluence-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: moyaca
+    restart: always
+    environment:
+      TZ: "Europe/Moscow"
+      MONGO_USERNAME: ${MONGO_USERNAME}
+      MONGO_PASSWORD: ${MONGO_PASSWORD}
+      YAGPT_TOKEN: ${YAGPT_TOKEN}
+      YAGPT_URL: ${YAGPT_URL}
+      YAGPT_MODEL: ${YAGPT_MODEL}
+    volumes:
+      - "./moca:/app/moca"
+      - "/opt/crawlab/logs:/app/logs"
+    depends_on:
+      - mongo
+    networks:
+      - crawlab-network
+    command: >
+      sh -c "echo '00 20 * * 3 cd /app/moca && python MongoYandexConfluenseAgent.py >> /app/logs/confluence-agent.log 2>&1' > /etc/crontabs/root &&
+             chmod 0644 /etc/crontabs/root &&
+             crond -f"

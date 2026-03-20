@@ -1,0 +1,19 @@
+networks:
+  crawlab-network:
+    external: true
+
+services:
+  worker:
+    image: crawlabteam/crawlab
+    container_name: crawlab_worker
+    restart: always
+    environment:
+      CRAWLAB_NODE_MASTER: "N"  # N: worker node
+      CRAWLAB_GRPC_ADDRESS: "master:9666"  # grpc address (uses service name on shared network)
+      CRAWLAB_FS_FILER_URL: "http://master:8080/api/filer"  # seaweedfs api (uses service name on shared network)
+    volumes:
+      - "/opt/.crawlab/worker:/root/.crawlab"  # persistent crawlab metadata
+      - "/opt/crawlab/worker:/data"  # persistent crawlab data
+    networks:
+      - crawlab-network
+
