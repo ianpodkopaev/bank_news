@@ -23,6 +23,14 @@ services:
       CRAWLAB_MONGO_USERNAME: ${MONGO_USERNAME}  # mongo username
       CRAWLAB_MONGO_PASSWORD: ${MONGO_PASSWORD}  # mongo password
       CRAWLAB_MONGO_AUTHSOURCE: "admin"  # mongo auth source
+      # Proxy settings for external access
+      #
+      #
+      HTTP_PROXY: "http://172.16.10.29:8080"
+      HTTPS_PROXY: "http://172.16.10.29:8080"
+      NO_PROXY: "localhost,127.0.0.1,::1,192.168.88.0/24,mongo"
+
+
     volumes:
       - "/opt/.crawlab/master:/root/.crawlab"  # persistent crawlab metadata
       - "/opt/crawlab/master:/data"  # persistent crawlab data
@@ -55,27 +63,4 @@ services:
     networks:
       - crawlab-network
 
-  mongo-yandex-confluence-agent:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: moyaca
-    restart: always
-    environment:
-      TZ: "Europe/Moscow"
-      MONGO_USERNAME: ${MONGO_USERNAME}
-      MONGO_PASSWORD: ${MONGO_PASSWORD}
-      YAGPT_TOKEN: ${YAGPT_TOKEN}
-      YAGPT_URL: ${YAGPT_URL}
-      YAGPT_MODEL: ${YAGPT_MODEL}
-    volumes:
-      - "./moca:/app/moca"
-      - "/opt/crawlab/logs:/app/logs"
-    depends_on:
-      - mongo
-    networks:
-      - crawlab-network
-    command: >
-      sh -c "echo '00 20 * * 3 cd /app/moca && python MongoYandexConfluenseAgent.py >> /app/logs/confluence-agent.log 2>&1' > /etc/crontabs/root &&
-             chmod 0644 /etc/crontabs/root &&
-             crond -f"
+

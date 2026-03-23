@@ -246,7 +246,6 @@ class TbankSpider(scrapy.Spider):
                 'url': article_url.rstrip('/'),
                 'source': 'tbank.ru',
                 'scraped_at': datetime.now().isoformat(),
-                'date_parsed': date_str if date_str else None
             }
 
             yield item
