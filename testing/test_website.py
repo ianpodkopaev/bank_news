@@ -95,12 +95,12 @@ async def test_website(url):
                 print(f"✅ JS Rendering: Page loaded successfully")
 
             # Screenshot
-            screenshot_path = f"/home/confuseduser/GolandProjects/bank_news/test_{base_domain}_{timestamp}.png"
+            screenshot_path = f"test_{base_domain}_{timestamp}.png"
             await page.screenshot(path=screenshot_path, full_page=True)
             print(f"📸 Screenshot saved: {screenshot_path}")
 
             # Save HTML
-            html_path = f"/home/confuseduser/GolandProjects/bank_news/test_{base_domain}_{timestamp}.html"
+            html_path = f"test_{base_domain}_{timestamp}.html"
             with open(html_path, 'w', encoding='utf-8') as f:
                 f.write(content)
             print(f"💾 HTML saved: {html_path}")
