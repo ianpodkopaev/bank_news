@@ -33,16 +33,16 @@ async def test_website(url):
             'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         })
         if response.status_code == 200:
-            print(f"✅ robots.txt found (status: {response.status_code})")
+            print(f" robots.txt found (status: {response.status_code})")
             print(f"Content preview:\n{response.text[:500]}")
         else:
-            print(f"❌ robots.txt not accessible (status: {response.status_code})")
+            print(f" robots.txt not accessible (status: {response.status_code})")
     except Exception as e:
-        print(f"❌ Error accessing robots.txt: {str(e)}")
+        print(f" Error accessing robots.txt: {str(e)}")
 
     # Test 2: Basic HTTP response
     print(f"\n[{timestamp}] Test 2: Basic HTTP GET request")
-    print(f"\n📋 Copy this command to manually test in your terminal:")
+    print(f"\n Copy this command to manually test in your terminal:")
     print(f"   curl -v -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' '{url}' | head -100")
     print()
 
@@ -56,13 +56,13 @@ async def test_website(url):
 
         # Check for TSPD
         if "TSPD" in response.text:
-            print(f"⚠️  TSPD detected in HTTP response")
+            print(f"  TSPD detected in HTTP response")
         if "Please enable JavaScript" in response.text:
-            print(f"⚠️  JavaScript challenge detected")
+            print(f"  JavaScript challenge detected")
         if "Возникла проблема при открытии сайта" in response.text:
-            print(f"⚠️  WAF blocking detected")
+            print(f"  WAF blocking detected")
     except Exception as e:
-        print(f"❌ Error: {str(e)}")
+        print(f" Error: {str(e)}")
 
     # Test 3: Playwright rendering
     print(f"\n[{timestamp}] Test 3: JavaScript rendering with Playwright")
@@ -88,27 +88,27 @@ async def test_website(url):
 
             # Check for challenges
             if "TSPD" in content and "Please enable JavaScript" in content:
-                print(f"❌ JS Challenge: Still on TSPD challenge page after rendering")
+                print(f" JS Challenge: Still on TSPD challenge page after rendering")
             elif "Возникла проблема при открытии сайта" in content:
-                print(f"❌ WAF: Blocked after rendering")
+                print(f" WAF: Blocked after rendering")
             else:
-                print(f"✅ JS Rendering: Page loaded successfully")
+                print(f" JS Rendering: Page loaded successfully")
 
             # Screenshot
             screenshot_path = f"test_{base_domain}_{timestamp}.png"
             await page.screenshot(path=screenshot_path, full_page=True)
-            print(f"📸 Screenshot saved: {screenshot_path}")
+            print(f" Screenshot saved: {screenshot_path}")
 
             # Save HTML
             html_path = f"test_{base_domain}_{timestamp}.html"
             with open(html_path, 'w', encoding='utf-8') as f:
                 f.write(content)
-            print(f"💾 HTML saved: {html_path}")
+            print(f" HTML saved: {html_path}")
 
             await browser.close()
 
     except Exception as e:
-        print(f"❌ Playwright error: {str(e)}")
+        print(f" Playwright error: {str(e)}")
 
     print(f"\n{'='*70}")
     print(f"Test complete: {url}")

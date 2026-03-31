@@ -20,10 +20,10 @@ async def test_bot():
         bot = Bot(token=bot_token)
 
         # Test message
-        test_message = """🚀 **Bank News Bot Test**
+        test_message = """ **Bank News Bot Test**
 
-✅ Bot configured successfully
-✅ Channel access confirmed
+Bot configured successfully
+Channel access confirmed
 
 This is a test message from your Bank News pipeline."""
 
@@ -33,11 +33,11 @@ This is a test message from your Bank News pipeline."""
             parse_mode="Markdown"
         )
 
-        print("\n✅ Test message sent successfully!")
+        print("\n Test message sent successfully!")
         print(f"Message ID: {result.message_id}")
 
     except Exception as e:
-        print(f"\n❌ Error: {e}")
+        print(f"\n Error: {e}")
         print("\nPlease check:")
         print("  1. Bot token is correct")
         print("  2. Bot is admin of channel")

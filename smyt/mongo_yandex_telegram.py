@@ -27,9 +27,9 @@ def load_env_file():
         from dotenv import load_dotenv
 
         load_dotenv(env_path)
-        print(f"✅ Loaded environment variables from {env_path}")
+        print(f" Loaded environment variables from {env_path}")
     else:
-        print(f"⚠️  No .env file found at {env_path}")
+        print(f"  No .env file found at {env_path}")
         print(f"   Please copy .env.example to .env and configure")
 
 
@@ -85,9 +85,9 @@ class MongoYandexTelegramAgent:
         if Config.TELEGRAM_BOT_TOKEN:
             try:
                 self.telegram_bot = Bot(token=Config.TELEGRAM_BOT_TOKEN)
-                self.logger.info("✅ Telegram bot initialized")
+                self.logger.info(" Telegram bot initialized")
             except Exception as e:
-                self.logger.warning(f"⚠️  Failed to initialize Telegram bot: {e}")
+                self.logger.warning(f"  Failed to initialize Telegram bot: {e}")
                 self.logger.warning("   Will run in test mode (no Telegram sending)")
 
         self.logger.info("MongoYandexTelegramAgent initialized")
@@ -237,7 +237,7 @@ class MongoYandexTelegramAgent:
         """
         if not self.telegram_bot or not Config.TELEGRAM_CHANNEL_ID:
             self.logger.warning(
-                "⚠️  Telegram bot not configured - skipping message send"
+                "  Telegram bot not configured - skipping message send"
             )
             return False
 
@@ -261,14 +261,14 @@ class MongoYandexTelegramAgent:
                     parse_mode=parse_mode,
                 )
 
-            self.logger.info("✅ Message sent to Telegram successfully")
+            self.logger.info(" Message sent to Telegram successfully")
             return True
 
         except TelegramError as e:
-            self.logger.error(f"❌ Telegram API error: {e}")
+            self.logger.error(f" Telegram API error: {e}")
             return False
         except Exception as e:
-            self.logger.error(f"❌ Error sending to Telegram: {e}")
+            self.logger.error(f" Error sending to Telegram: {e}")
             return False
 
     def send_to_telegram(self, message: str, parse_mode: str = "Markdown") -> bool:
@@ -381,7 +381,7 @@ class MongoYandexTelegramAgent:
                 # Mark as processed
                 self.mark_article_processed(article_id, summary)
                 self.logger.info(
-                    f"✅ Successfully processed and sent article {article_id}"
+                    f" Successfully processed and sent article {article_id}"
                 )
                 return summary
             else:
@@ -477,7 +477,7 @@ def main():
 
     # Validate configuration
     if not Config.validate():
-        print("\n❌ Configuration validation failed")
+        print("\n Configuration validation failed")
         return
 
     # Display configuration
@@ -507,12 +507,12 @@ def main():
         for key, value in stats.items():
             print(f"  {key}: {value}")
         print("=" * 60)
-        print(f"\n✅ Successfully processed {successful} articles\n")
+        print(f"\n Successfully processed {successful} articles\n")
 
     except KeyboardInterrupt:
-        print("\n\n⚠️  Processing interrupted by user\n")
+        print("\n\n  Processing interrupted by user\n")
     except Exception as e:
-        print(f"\n\n❌ Error: {e}\n")
+        print(f"\n\n Error: {e}\n")
         print("Please check:")
         print("  1. MongoDB is running and accessible")
         print("  2. Credentials are correct")
