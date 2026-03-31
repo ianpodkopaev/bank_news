@@ -1,18 +1,20 @@
 # Bank News
 
-A Python pipeline that aggregates banking/fintech news from MongoDB, processes it through Yandex AI, and publishes summaries to Telegram channels.
+A Python pipeline that aggregates banking/fintech news from MongoDB, processes it through LLM, and publishes summaries to Telegram channels.
 
 ## Overview
 
-This project implements a three-stage pipeline:
-
-1. **MongoDB Ingestion**: Reads articles from `results_news_telegram` collection
-2. **LLM Processing**: Sends unprocessed articles to Yandex AI for fintech/banking trends analysis
-3. **Telegram Publishing**: Posts analyzed articles as summary messages to Telegram channel
+This project implements a four-stage pipeline:
+1. **Crawlab Scrapy**: Crawl websites for data
+2. **MongoDB Ingestion**: Reads articles from `results_news_telegram` collection
+3. **LLM Processing**: Sends unprocessed articles to Yandex AI for fintech/banking trends analysis
+4. **Telegram Publishing**: Posts analyzed articles as summary messages to Telegram channel
 
 ### Data Flow
 
 ```
+Crawlab (parses data from whitelist)
+    ↓ (unprocessed articles)
 MongoDB (results_news_telegram collection)
     ↓ (unprocessed articles)
 Yandex AI API
@@ -135,7 +137,7 @@ LLM_PROMPT=Analyze this fintech article:\n\nTitle: {title}\nURL: {url}\nDate: {a
 ## Features
 
 - **MongoDB Integration**: Reads from and updates MongoDB collections
-- **Yandex AI Processing**: Analyzes articles using custom or default prompts
+- **LLM Processing**: Analyzes articles using custom or default prompts
 - **Telegram Publishing**: Posts formatted summaries to Telegram channels
 - **Batch Processing**: Processes multiple articles per run
 - **Error Handling**: Retries failed requests with configurable limits
@@ -144,37 +146,6 @@ LLM_PROMPT=Analyze this fintech article:\n\nTitle: {title}\nURL: {url}\nDate: {a
 - **Long Message Splitting**: Automatically splits long messages into multiple parts
 - **Logging**: Comprehensive logging for debugging
 
-## Troubleshooting
-
-### MongoDB Connection Issues
-
-- Check MongoDB is running: `sudo systemctl status mongodb`
-- Verify credentials in `.env` file
-- Check network connectivity to MongoDB server
-
-### Yandex AI Issues
-
-- Verify `YAGPT_URL` is correct and accessible
-- Check `YAGPT_TOKEN` is valid
-- Increase `MAX_RETRIES` in `.env` if needed
-- Check Yandex AI service status
-
-### Telegram Issues
-
-- Verify `TELEGRAM_BOT_TOKEN` is valid
-- Check bot has permissions to post to the channel
-- Ensure bot is a member/admin of the channel
-- Verify `TELEGRAM_CHANNEL_ID` format (e.g., `-1001234567890`)
-
-### Check Logs
-
-```bash
-# View real-time logs
-tail -f logs/bank_news.log
-
-# View recent errors
-grep ERROR logs/bank_news.log | tail -n 20
-```
 
 ## Development
 
@@ -185,21 +156,7 @@ grep ERROR logs/bank_news.log | tail -n 20
 - `main.py` - Entry point
 - `requirements.txt` - Python dependencies
 - `.env.example` - Configuration template
-- `CLAUDE.md` - Claude Code instructions
 
-### Running Tests
-
-```bash
-# Test without Telegram (set TELEGRAM_BOT_TOKEN= in .env or remove it)
-python main.py
-
-# Test with custom batch size
-BATCH_SIZE=3 python main.py
-```
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
