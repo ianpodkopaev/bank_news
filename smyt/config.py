@@ -52,16 +52,16 @@ class Config:
 4. Если статья не о финтехе - кратко опиши общий финансовый контент
 
 **Формат ответа:**
-📌 **{Заголовок статьи}**
+ **Заголовок статьи здесь**
 
-{Краткое описание - 2-3 предложения}
+Краткое описание - 2-3 предложения
 
-💡 **Ключевые моменты:**
-- • Тренд 1
-- • Тренд 2
-- • Тренд 3 (если применимо)
+ **Ключевые моменты:**
+- Тренд 1
+- Тренд 2
+- Тренд 3 (если применимо)
 
-📰 Источник: {url}
+ Источник: {url}
 
 **Важно:**
 - Используй эмодзи для форматирования (как в примере выше)
@@ -71,13 +71,14 @@ class Config:
 
 Верни только готовый Markdown без дополнительных комментариев.
 """
-
     # Processing Configuration
     BATCH_SIZE: int = int(os.getenv("BATCH_SIZE", "10"))  # Articles to process per run
     DELAY_BETWEEN_REQUESTS: int = int(
         os.getenv("DELAY_BETWEEN_REQUESTS", "2")
     )  # Seconds between API calls
-    MAX_RETRIES: int = int(os.getenv("MAX_RETRIES", "2"))  # Retry attempts for failed calls
+    MAX_RETRIES: int = int(
+        os.getenv("MAX_RETRIES", "2")
+    )  # Retry attempts for failed calls
 
     # Logging
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
@@ -116,7 +117,7 @@ class Config:
         #     errors.append("TELEGRAM_CHANNEL_ID is required")
 
         if errors:
-            print("❌ Configuration errors:")
+            print(" Configuration errors:")
             for error in errors:
                 print(f"  - {error}")
             print("\nPlease set the required environment variables in .env file")
@@ -137,7 +138,9 @@ class Config:
         print(f"Yandex AI Model: {cls.YAGPT_MODEL}")
         print(f"Telegram Bot Token: {'SET' if cls.TELEGRAM_BOT_TOKEN else 'NOT SET'}")
         print(f"Telegram Channel ID: {cls.TELEGRAM_CHANNEL_ID}")
-        print(f"LLM Prompt: {'CUSTOM (from env)' if cls.LLM_PROMPT else 'DEFAULT (fintech trends)'}")
+        print(
+            f"LLM Prompt: {'CUSTOM (from env)' if cls.LLM_PROMPT else 'DEFAULT (fintech trends)'}"
+        )
         print(f"Batch Size: {cls.BATCH_SIZE}")
         print(f"Max Retries: {cls.MAX_RETRIES}")
         print("=" * 60 + "\n")

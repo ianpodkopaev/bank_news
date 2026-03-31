@@ -17,7 +17,6 @@ from telegram.error import TelegramError
 from tqdm import tqdm
 
 # Import configuration
-from config import Config
 
 
 # Load .env file if it exists
@@ -26,6 +25,7 @@ def load_env_file():
     env_path = Path(__file__).parent / ".env"
     if env_path.exists():
         from dotenv import load_dotenv
+
         load_dotenv(env_path)
         print(f"✅ Loaded environment variables from {env_path}")
     else:
@@ -34,6 +34,9 @@ def load_env_file():
 
 
 load_env_file()
+
+
+from config import Config
 
 
 class MongoYandexTelegramAgent:
@@ -67,9 +70,7 @@ class MongoYandexTelegramAgent:
         # Test MongoDB connection
         try:
             self.mongo_client.admin.command("ping")
-            self.logger.info(
-                f"MongoDB connection successful to {mongo_config['uri']}"
-            )
+            self.logger.info(f"MongoDB connection successful to {mongo_config['uri']}")
         except Exception as e:
             self.logger.error(f"MongoDB connection failed: {e}")
             raise
@@ -127,7 +128,9 @@ class MongoYandexTelegramAgent:
             cursor = cursor.limit(limit)
 
         articles = list(cursor)
-        self.logger.info(f"Retrieved {len(articles)} unprocessed articles (limit={limit})")
+        self.logger.info(
+            f"Retrieved {len(articles)} unprocessed articles (limit={limit})"
+        )
         return articles
 
     def call_yandexgpt(self, prompt: str, max_retries: int = None) -> str:
@@ -220,7 +223,9 @@ class MongoYandexTelegramAgent:
 
         return prompt
 
-    async def send_to_telegram_async(self, message: str, parse_mode: str = "Markdown") -> bool:
+    async def send_to_telegram_async(
+        self, message: str, parse_mode: str = "Markdown"
+    ) -> bool:
         """Async method to send message to Telegram channel.
 
         Args:
@@ -274,9 +279,7 @@ class MongoYandexTelegramAgent:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
 
-        return loop.run_until_complete(
-            self.send_to_telegram_async(message, parse_mode)
-        )
+        return loop.run_until_complete(self.send_to_telegram_async(message, parse_mode))
 
     def split_long_message(self, message: str, max_length: int = 4000) -> List[str]:
         """Split long message into multiple parts.
@@ -345,9 +348,7 @@ class MongoYandexTelegramAgent:
             if summary:
                 update_data["$set"]["telegram_summary"] = summary
 
-            self.collection.update_one(
-                {"_id": ObjectId(article_id)}, update_data
-            )
+            self.collection.update_one({"_id": ObjectId(article_id)}, update_data)
             self.logger.info(f"Marked article {article_id} as processed")
         except Exception as e:
             self.logger.error(f"Error marking article as processed: {e}")
@@ -384,9 +385,7 @@ class MongoYandexTelegramAgent:
                 )
                 return summary
             else:
-                self.logger.error(
-                    f"Failed to send article {article_id} to Telegram"
-                )
+                self.logger.error(f"Failed to send article {article_id} to Telegram")
                 # Still mark as processed to avoid retry loops
                 self.mark_article_processed(article_id, summary)
                 return summary
@@ -436,9 +435,7 @@ class MongoYandexTelegramAgent:
                 # Delay between requests
                 time.sleep(delay)
 
-        self.logger.info(
-            f"Batch complete: {successful}/{len(articles)} successful"
-        )
+        self.logger.info(f"Batch complete: {successful}/{len(articles)} successful")
         return successful
 
     def get_processing_stats(self) -> Dict[str, Any]:
@@ -450,7 +447,9 @@ class MongoYandexTelegramAgent:
         try:
             total_articles = self.collection.count_documents({})
             processed_articles = self.collection.count_documents({"processed": True})
-            unprocessed_articles = self.collection.count_documents({"processed": {"$ne": True}})
+            unprocessed_articles = self.collection.count_documents(
+                {"processed": {"$ne": True}}
+            )
 
             return {
                 "total_articles": total_articles,
