@@ -46,7 +46,7 @@ pip install -r requirements.txt
 cp .env.example .env
 
 # Edit .env with your credentials
-nano .env
+nvim .env
 ```
 
 Required environment variables:
